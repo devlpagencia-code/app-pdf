@@ -1,22 +1,36 @@
 import uuid
 import os
-import json
+from services.storage_service import StorageService
 
 class DocumentService:
     def __init__(self, repo):
         self.repo = repo
+        self.storage = StorageService()
 
     def upload(self, file):
         token = uuid.uuid4().hex
-        path = f"storage/pdfs/{token}.pdf"
-        os.makedirs("storage/pdfs", exist_ok=True)
-        with open(path, "wb") as f:
-            f.write(file.file.read())
-        self.repo.create(token, path)
+        filename = f"{token}.pdf"
+        
+        # Lê conteúdo do arquivo
+        file_content = file.file.read()
+        
+        # Salva usando storage service (local ou S3)
+        storage_path = self.storage.save_file(file_content, filename)
+        
+        # Salva metadados no banco
+        doc = self.repo.create(token, storage_path)
+        
         return {
-            "token": token,
-            "link": f"http://localhost:5173/?doc={token}"
+            "token": doc.token,
+            "link": f"http://localhost:5173/?doc={doc.token}"
         }
 
     def get_by_token(self, token):
-        return self.repo.get_by_token(token)
+        doc = self.repo.get_by_token(token)
+        return {
+            "token": doc.token,
+            "file_path": doc.file_path,
+            "url": self.storage.get_file_url(f"{token}.pdf")
+        }
+
+

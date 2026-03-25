@@ -30,7 +30,10 @@ class Tracker {
         session_id: this.session,
         document_id: this.documentId,
         page: this.currentPage,
-        timestamp: now
+        timestamp: now,
+        metadata: {
+          duration_ms: now - this.pageStart
+        }
       })
     }
 
@@ -48,12 +51,16 @@ class Tracker {
 
   endSession() {
     if (this.currentPage) {
+      const now = Date.now()
       enqueueEvent({
         event_type: "page_time",
         session_id: this.session,
         document_id: this.documentId,
         page: this.currentPage,
-        timestamp: Date.now()
+        timestamp: now,
+        metadata: {
+          duration_ms: now - this.pageStart
+        }
       })
     }
 

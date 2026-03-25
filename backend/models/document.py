@@ -1,11 +1,9 @@
-# app/models/document.py
-
 from sqlalchemy import Column, Integer, String
-from app.database.db import Base
+from database.db import Base
 
 class Document(Base):
-    __tablename__ = "documents"
+    __tablename__ = 'documents'
 
-    id = Column(Integer, primary_key=True)
-    token = Column(String, unique=True)
-    file_path = Column(String)
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, nullable=False, index=True)
+    file_path = Column(String, nullable=False)

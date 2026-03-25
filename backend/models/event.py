@@ -1,12 +1,13 @@
-# app/models/event.py
-
-from sqlalchemy import Column, Integer, String, BigInteger
+from sqlalchemy import Column, Integer, String, BigInteger, JSON
+from database.db import Base
 
 class Event(Base):
-    __tablename__ = "events"
+    __tablename__ = 'events'
 
-    id = Column(Integer, primary_key=True)
-    token = Column(String)
-    event = Column(String)
-    page = Column(Integer)
-    timestamp = Column(BigInteger)
+    id = Column(Integer, primary_key=True, index=True)
+    event_type = Column(String, nullable=False)
+    session_id = Column(String, nullable=False)
+    document_id = Column(String, nullable=True)
+    timestamp = Column(BigInteger, nullable=False)
+    page = Column(Integer, nullable=True)
+    metadata_json = Column(JSON, nullable=True)

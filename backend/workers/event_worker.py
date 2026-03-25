@@ -1,23 +1,12 @@
-# app/workers/event_worker.py
+# backend/workers/event_worker.py
 
 import time
 import json
-import redis
-from app.database.db import SessionLocal
-from app.repositories.event_repo import EventRepo
+from core.queue import pop_event
 
-r = redis.Redis()
-
+# Worker loop: process any queued events (in-memory fallback) and log them.
 while True:
-
-    event = r.brpop("events_queue")
-
+    event = pop_event()
     if event:
-
-        data = json.loads(event[1])
-
-        db = SessionLocal()
-
-        EventRepo(db).create(data)
-
-        db.close()
+        print("Processed event:", json.dumps(event, ensure_ascii=False))
+    time.sleep(1)

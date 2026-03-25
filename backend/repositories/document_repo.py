@@ -1,30 +1,20 @@
-import json
-import os
+from database.db import SessionLocal
+from models.document import Document
 
 class DocumentRepo:
-    def __init__(self):
-        self.file = 'storage/documents.json'
-        os.makedirs('storage', exist_ok=True)
-        if not os.path.exists(self.file):
-            with open(self.file, 'w') as f:
-                json.dump([], f)
-
-    def _read_all(self):
-        with open(self.file, 'r') as f:
-            return json.load(f)
-
-    def _write_all(self, docs):
-        with open(self.file, 'w') as f:
-            json.dump(docs, f)
+    def __init__(self, db=None):
+        self.db = db or SessionLocal()
 
     def create(self, token, file_path):
-        docs = self._read_all()
-        docs.append({'token': token, 'file_path': file_path})
-        self._write_all(docs)
+        doc = Document(token=token, file_path=file_path)
+        self.db.add(doc)
+        self.db.commit()
+        self.db.refresh(doc)
+        return doc
 
     def get_by_token(self, token):
-        docs = self._read_all()
-        for d in docs:
-            if d.get('token') == token:
-                return d
-        raise ValueError('Document not found')
+        doc = self.db.query(Document).filter(Document.token == token).first()
+        if not doc:
+            raise ValueError('Document not found')
+        return doc
+
