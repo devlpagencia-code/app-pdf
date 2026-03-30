@@ -1,15 +1,3 @@
-"""
-Scheduler para agregação e limpeza de eventos.
-Execute este script como cron job ou tarefa agendada.
-
-Exemplo de cron (Linux):
-    0 2 * * * cd /caminho/para/backend && python -m workers.scheduler
-
-Exemplo de Task Scheduler (Windows):
-    Disparar: C:\\Python\\python.exe -m workers.scheduler
-    Pasta: C:\\caminho\\para\\backend
-"""
-
 import logging
 import schedule
 import time
@@ -26,21 +14,21 @@ def scheduled_aggregation():
     """Função chamada periodicamente."""
     logger.info("Iniciando agregação de eventos...")
     try:
-        result = run_aggregation(days_to_keep=7)
+        result = run_aggregation()
         logger.info(f"Agregação concluída: {result}")
     except Exception as e:
         logger.error(f"Erro na agregação: {str(e)}")
 
 
 def start_scheduler():
-    """Inicia scheduler que roda agregação todo dia às 2:00 AM."""
-    schedule.every().day.at("02:00").do(scheduled_aggregation)
+    """Inicia scheduler que roda agregação a cada 5 minutos."""
+    schedule.every(60).seconds.do(scheduled_aggregation)
     
     logger.info("Scheduler iniciado. Aguardando próxima execução...")
     
     while True:
         schedule.run_pending()
-        time.sleep(60)
+        time.sleep(1)
 
 
 if __name__ == "__main__":

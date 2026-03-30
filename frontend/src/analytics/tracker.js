@@ -6,11 +6,18 @@ class Tracker {
     this.currentPage = null
     this.pageStart = null
     this.documentId = null
+    this.closed = false
+    this.started = false
   }
 
   startSession(documentId) {
+    this.started = true
     this.documentId = documentId
     this.session = crypto.randomUUID()
+
+    // 👇 salva no navegador
+    localStorage.setItem("tracker_session", this.session)
+    localStorage.setItem("tracker_document", documentId)
 
     enqueueEvent({
       event_type: "document_open",
@@ -50,12 +57,26 @@ class Tracker {
   }
 
   endSession() {
-    if (this.currentPage) {
-      const now = Date.now()
-      enqueueEvent({
+    if (this.closed) return
+    this.closed = true
+
+    const session = this.session || localStorage.getItem("tracker_session")
+    const documentId = this.documentId || localStorage.getItem("tracker_document")
+
+    if (!session || !documentId) {
+      console.warn("document_close ignorado (sem sessão válida)")
+      return
+    }
+
+    const now = Date.now()
+    const events = []
+
+    // 👇 salva tempo da última página
+    if (this.currentPage && this.pageStart) {
+      events.push({
         event_type: "page_time",
-        session_id: this.session,
-        document_id: this.documentId,
+        session_id: session,
+        document_id: documentId,
         page: this.currentPage,
         timestamp: now,
         metadata: {
@@ -64,13 +85,19 @@ class Tracker {
       })
     }
 
-    enqueueEvent({
+    // 👇 document close
+    events.push({
       event_type: "document_close",
-      session_id: this.session,
-      document_id: this.documentId,
-      timestamp: Date.now(),
+      session_id: session,
+      document_id: documentId,
+      timestamp: now,
       page: null
     })
+
+    navigator.sendBeacon(
+      "/api/events",
+      JSON.stringify(events)
+    )
   }
 }
 

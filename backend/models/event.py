@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, BigInteger, JSON
+from sqlalchemy import Column, Integer, String, BigInteger, Boolean, JSON
 from database.db import Base
 
 class Event(Base):
@@ -11,3 +11,4 @@ class Event(Base):
     timestamp = Column(BigInteger, nullable=False)
     page = Column(Integer, nullable=True)
     metadata_json = Column(JSON, nullable=True)
+    processed = Column(Boolean, default=False)

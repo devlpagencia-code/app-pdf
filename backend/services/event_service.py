@@ -19,34 +19,69 @@ def log_event(event):
         pass
 
 
-def handle_event(event):
-    """Processa evento: valida, salva no DB, log e adiciona na fila."""
+def handle_event(event, db):
+    """Processa evento: valida, normaliza, salva no DB e envia para fila."""
+
     if not isinstance(event, dict):
         raise ValueError("Evento inválido: deve ser um objeto JSON")
 
     required = ["event_type", "session_id", "timestamp"]
-    if not all(field in event for field in required):
-        raise ValueError(f"Evento faltando campos obrigatórios: {required}")
+    for field in required:
+        if field not in event or event.get(field) is None:
+            raise ValueError(f"Campo obrigatório ausente: {field}")
+
+    event_type = str(event.get("event_type"))
+    session_id = str(event.get("session_id"))
+
+    document_id = event.get("document_id")
+    document_id = str(document_id) if document_id else None
+
+    try:
+        timestamp = int(event.get("timestamp"))
+    except Exception:
+        raise ValueError("Timestamp inválido")
+
+    page = event.get("page")
+    try:
+        page = int(page) if page is not None else None
+    except Exception:
+        page = None
+
+    metadata = event.get("metadata")
+
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    try:
+        metadata = json.loads(json.dumps(metadata))
+    except Exception:
+        metadata = {}
 
     event_payload = {
-        "event_type": str(event.get("event_type")),
-        "session_id": str(event.get("session_id")),
-        "document_id": str(event.get("document_id")) if event.get("document_id") is not None else None,
-        "timestamp": int(event.get("timestamp")),
-        "page": int(event.get("page")) if event.get("page") is not None else None,
-        "metadata": event.get("metadata", {}),
+        "event_type": event_type,
+        "session_id": session_id,
+        "document_id": document_id,
+        "timestamp": timestamp,
+        "page": page,
+        "metadata_json": metadata,
     }
 
+    print("EVENT NORMALIZADO:", event_payload)
+
+    repo = EventRepo(db)
+    saved_event = repo.create(event_payload)
+
     log_event(event_payload)
-    event = EventRepo().create(event_payload)
+
     push_event(event_payload)
+
     return {
-        "id": event.id,
-        "event_type": event.event_type,
-        "session_id": event.session_id,
-        "document_id": event.document_id,
-        "timestamp": event.timestamp,
-        "page": event.page,
-        "metadata": event.metadata_json,
+        "id": saved_event.id,
+        "event_type": saved_event.event_type,
+        "session_id": saved_event.session_id,
+        "document_id": saved_event.document_id,
+        "timestamp": saved_event.timestamp,
+        "page": saved_event.page,
+        "metadata": saved_event.metadata_json,
     }
 

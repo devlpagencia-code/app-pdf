@@ -1,6 +1,5 @@
 from database.db import SessionLocal
 from models.analytics import PageAnalytics
-from datetime import datetime
 
 
 class AnalyticsRepo:

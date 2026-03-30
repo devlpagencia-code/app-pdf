@@ -4,11 +4,9 @@ from api.events import router as event_router
 from api.document import router as document_router
 from api.analytics import router as analytics_router
 from database.db import engine, Base
-import models.document
-import models.event
-import models.analytics
 
 print("[Main] Iniciando aplicação...")
+
 
 app = FastAPI()
 
