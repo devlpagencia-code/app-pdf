@@ -16,19 +16,16 @@ class EventAggregator:
         db = SessionLocal()
 
         try:
-            # ⏱️ delay de segurança (evita eventos em aberto)
             cutoff = int((datetime.utcnow() - timedelta(minutes=5)).timestamp() * 1000)
 
-            # 🔎 base query SEGURA (filtra lixo)
             base_query = db.query(Event).filter(
                 Event.processed == False,
                 Event.timestamp <= cutoff,
                 Event.document_id.isnot(None),
                 Event.session_id.isnot(None),
-                Event.event_type.in_(["page_view", "page_time"])  # 👈 ignora document_close
+                Event.event_type.in_(["page_view", "page_time"])
             )
 
-            # 📊 agregação no banco (performance)
             results = db.query(
                 Event.document_id,
                 Event.session_id,
@@ -78,10 +75,9 @@ class EventAggregator:
 
             analytics_repo = AnalyticsRepo(db)
 
-            # 💾 UPSERT seguro
             for row in results:
                 if not row.document_id or not row.session_id:
-                    continue  # proteção extra
+                    continue
 
                 analytics_repo.upsert_page_analytics(
                     document_id=row.document_id,
@@ -93,13 +89,11 @@ class EventAggregator:
                     last_visit=row.last_visit,
                 )
 
-            # ✅ marcar como processado
             updated = base_query.update(
                 {Event.processed: True},
                 synchronize_session=False
             )
-
-            # 🧹 limpeza de eventos antigos (7 dias)
+            
             delete_cutoff = int((datetime.utcnow() - timedelta(days=7)).timestamp() * 1000)
 
             deleted = db.query(Event).filter(
